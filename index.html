@@ -292,11 +292,23 @@
                         return;
                     }
 
+                    // For MetaMask specifically, try to use window.ethereum.providers
+                    let selectedProvider = window.ethereum;
+
+                    // If multiple wallets are installed, try to find MetaMask
+                    if (walletType === 'metamask' && window.ethereum.providers) {
+                        const metamaskProvider = window.ethereum.providers.find(p => p.isMetaMask);
+                        if (metamaskProvider) {
+                            selectedProvider = metamaskProvider;
+                            console.log('Using MetaMask provider from providers array');
+                        }
+                    }
+
                     showStatus(`${walletType}に接続中...`, 'info');
 
                     // Request account access - this will prompt MetaMask
                     try {
-                        await window.ethereum.request({ method: 'eth_requestAccounts' });
+                        await selectedProvider.request({ method: 'eth_requestAccounts' });
                     } catch (requestError) {
                         if (requestError.code === 4001) {
                             throw new Error('接続がキャンセルされました。');
@@ -304,8 +316,8 @@
                         throw requestError;
                     }
 
-                    // Initialize provider and signer
-                    provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+                    // Initialize provider and signer with the selected provider
+                    provider = new ethers.providers.Web3Provider(selectedProvider, 'any');
 
                     // Get accounts to verify connection
                     const accounts = await provider.listAccounts();
@@ -333,13 +345,13 @@
                     if (network.chainId !== CHAIN_ID) {
                         showStatus('Base Sepoliaネットワークに切り替え中...', 'info');
                         try {
-                            await window.ethereum.request({
+                            await selectedProvider.request({
                                 method: 'wallet_switchEthereumChain',
                                 params: [{ chainId: '0x14a34' }],
                             });
                         } catch (switchError) {
                             if (switchError.code === 4902) {
-                                await window.ethereum.request({
+                                await selectedProvider.request({
                                     method: 'wallet_addEthereumChain',
                                     params: [{
                                         chainId: '0x14a34',
@@ -359,7 +371,7 @@
                         }
 
                         // Re-initialize provider after network switch
-                        provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+                        provider = new ethers.providers.Web3Provider(selectedProvider, 'any');
                         signer = provider.getSigner(accounts[0]);
 
                         // Get address again after network switch
