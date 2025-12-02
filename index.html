@@ -294,8 +294,14 @@
 
                     showStatus(`${walletType}に接続中...`, 'info');
 
+                    // Request account access
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+                    if (!accounts || accounts.length === 0) {
+                        throw new Error('アカウントが見つかりません。MetaMaskのロックを解除してください。');
+                    }
+
                     provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send('eth_requestAccounts', []);
                     signer = provider.getSigner();
 
                     // Check network
@@ -327,6 +333,10 @@
                                 throw switchError;
                             }
                         }
+
+                        // Re-initialize provider after network switch
+                        provider = new ethers.providers.Web3Provider(window.ethereum);
+                        signer = provider.getSigner();
                     }
 
                     const address = await signer.getAddress();
