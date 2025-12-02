@@ -253,8 +253,15 @@
         </div>
 
         <div class="connected-wallet" id="connectedWallet">
-            <div style="font-size: 12px; color: #666; margin-bottom: 4px;">接続中のウォレット:</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 12px; color: #666;">接続中のウォレット:</span>
+                <button onclick="disconnectWallet()" style="font-size: 11px; padding: 4px 8px; background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; border-radius: 4px; cursor: pointer;">切断</button>
+            </div>
             <div class="address" id="walletAddress"></div>
+            <div style="display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid #c8e6c9;">
+                <span style="font-size: 12px; color: #666;">USDC残高:</span>
+                <span id="usdcBalance" style="font-size: 12px; font-weight: 600; color: #2e7d32;">読み込み中...</span>
+            </div>
         </div>
 
         <button id="payBtn" class="pay-btn" onclick="sendPayment()">
@@ -280,11 +287,162 @@
         let signer = null;
         let userId = null;
         let selectedWallet = null;
+        let selectedProvider = null; // Keep reference to the provider for event listeners
+        let isConnecting = false; // Prevent multiple connection attempts
 
         // Get user ID from URL
         const urlParams = new URLSearchParams(window.location.search);
         userId = urlParams.get('user');
         document.getElementById('userId').textContent = userId || 'Not specified';
+
+        // Setup wallet event listeners
+        function setupWalletEventListeners() {
+            if (!selectedProvider) return;
+
+            // Remove existing listeners first to prevent duplicates
+            selectedProvider.removeListener?.('accountsChanged', handleAccountsChanged);
+            selectedProvider.removeListener?.('chainChanged', handleChainChanged);
+            selectedProvider.removeListener?.('disconnect', handleDisconnect);
+
+            // Add new listeners
+            selectedProvider.on?.('accountsChanged', handleAccountsChanged);
+            selectedProvider.on?.('chainChanged', handleChainChanged);
+            selectedProvider.on?.('disconnect', handleDisconnect);
+
+            console.log('✅ Wallet event listeners set up');
+        }
+
+        // Handle account changes
+        async function handleAccountsChanged(accounts) {
+            console.log('Accounts changed:', accounts);
+            if (accounts.length === 0) {
+                // User disconnected their wallet
+                handleDisconnect();
+            } else {
+                // User switched accounts
+                try {
+                    signer = provider.getSigner(accounts[0]);
+                    const address = await signer.getAddress();
+                    document.getElementById('walletAddress').textContent = address;
+                    showStatus(`🔄 アカウントが変更されました: ${address.slice(0, 6)}...${address.slice(-4)}`, 'info');
+                    await updateUSDCBalance();
+                } catch (error) {
+                    console.error('Error handling account change:', error);
+                }
+            }
+        }
+
+        // Handle chain/network changes
+        async function handleChainChanged(chainId) {
+            console.log('Chain changed:', chainId);
+            const newChainId = parseInt(chainId, 16);
+
+            if (newChainId !== CHAIN_ID) {
+                showStatus(`⚠️ 間違ったネットワークです。Base Sepoliaに切り替えてください。`, 'warning');
+                document.getElementById('payBtn').disabled = true;
+            } else {
+                // Reinitialize provider with new chain
+                provider = new ethers.providers.Web3Provider(selectedProvider, 'any');
+                const accounts = await selectedProvider.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    signer = provider.getSigner(accounts[0]);
+                    showStatus(`✅ Base Sepoliaに接続されています`, 'success');
+                    document.getElementById('payBtn').disabled = false;
+                    await updateUSDCBalance();
+                }
+            }
+        }
+
+        // Handle wallet disconnect
+        function handleDisconnect(error) {
+            console.log('Wallet disconnected:', error);
+            resetWalletState();
+            showStatus('ウォレットが切断されました。再接続してください。', 'warning');
+        }
+
+        // Reset wallet state (shared by disconnect and manual disconnect)
+        function resetWalletState() {
+            // Remove event listeners before resetting
+            if (selectedProvider) {
+                selectedProvider.removeListener?.('accountsChanged', handleAccountsChanged);
+                selectedProvider.removeListener?.('chainChanged', handleChainChanged);
+                selectedProvider.removeListener?.('disconnect', handleDisconnect);
+            }
+
+            provider = null;
+            signer = null;
+            selectedProvider = null;
+            selectedWallet = null;
+            isConnecting = false;
+
+            document.getElementById('connectedWallet').style.display = 'none';
+            document.getElementById('payBtn').style.display = 'none';
+            document.getElementById('walletAddress').textContent = '';
+            document.getElementById('usdcBalance').textContent = '読み込み中...';
+
+            // Reset pay button style
+            const btn = document.getElementById('payBtn');
+            btn.disabled = false;
+            btn.textContent = '💸 Send 0.1 USDC';
+            btn.style.background = '';
+        }
+
+        // Manual disconnect function
+        function disconnectWallet() {
+            console.log('User requested disconnect');
+            resetWalletState();
+            showStatus('ウォレットを切断しました。', 'info');
+        }
+
+        // Get and display USDC balance
+        async function updateUSDCBalance() {
+            if (!signer || !provider) return;
+
+            try {
+                const usdcContract = new ethers.Contract(
+                    USDC_ADDRESS,
+                    ['function balanceOf(address) view returns (uint256)'],
+                    provider
+                );
+
+                const address = await signer.getAddress();
+                const balance = await usdcContract.balanceOf(address);
+                const formattedBalance = ethers.utils.formatUnits(balance, 6);
+
+                const balanceEl = document.getElementById('usdcBalance');
+                if (balanceEl) {
+                    balanceEl.textContent = `${parseFloat(formattedBalance).toFixed(2)} USDC`;
+                }
+
+                // Check if balance is sufficient
+                if (parseFloat(formattedBalance) < 0.1) {
+                    showStatus(`⚠️ USDC残高が不足しています (${parseFloat(formattedBalance).toFixed(2)} USDC)。0.1 USDC以上が必要です。`, 'warning');
+                }
+
+                return formattedBalance;
+            } catch (error) {
+                console.error('Error getting USDC balance:', error);
+            }
+        }
+
+        // Check if wallet is already connected on page load
+        async function checkExistingConnection() {
+            if (!window.ethereum) return;
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    console.log('Found existing connection:', accounts[0]);
+                    // Don't auto-connect, just show a hint
+                    showStatus('💡 前回接続したウォレットが検出されました。ウォレットボタンをクリックして再接続してください。', 'info');
+                }
+            } catch (error) {
+                console.error('Error checking existing connection:', error);
+            }
+        }
+
+        // Run on page load
+        checkExistingConnection();
 
         function showStatus(message, type = 'info') {
             const statusEl = document.getElementById('status');
@@ -299,18 +457,26 @@
         }
 
         async function connectWallet(walletType) {
+            // Prevent multiple simultaneous connection attempts
+            if (isConnecting) {
+                showStatus('⏳ 接続処理中です。少々お待ちください...', 'info');
+                return;
+            }
+
             selectedWallet = walletType;
+            isConnecting = true;
 
             try {
                 if (walletType === 'metamask' || walletType === 'rabby' || walletType === 'coinbase') {
                     // Injected wallet providers
                     if (!window.ethereum) {
                         showStatus('ウォレットがインストールされていません。MetaMask, Rabby, Coinbase Walletのいずれかをインストールしてください。', 'error');
+                        isConnecting = false;
                         return;
                     }
 
                     // Strategy: Try multiple methods to get the correct provider
-                    let selectedProvider = null;
+                    let detectedProvider = null;
 
                     console.log('Detecting wallet providers...');
                     console.log('window.ethereum:', window.ethereum);
@@ -319,44 +485,48 @@
                     if (walletType === 'metamask') {
                         // Method 1: Check for dedicated MetaMask object (most reliable)
                         if (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.providers) {
-                            selectedProvider = window.ethereum;
+                            detectedProvider = window.ethereum;
                             console.log('✅ Method 1: Using window.ethereum (single MetaMask)');
                         }
                         // Method 2: Search in providers array
                         else if (window.ethereum?.providers && Array.isArray(window.ethereum.providers)) {
-                            selectedProvider = window.ethereum.providers.find(p => p.isMetaMask && !p.isTally && !p.isBackpack);
-                            if (selectedProvider) {
+                            detectedProvider = window.ethereum.providers.find(p => p.isMetaMask && !p.isTally && !p.isBackpack);
+                            if (detectedProvider) {
                                 console.log('✅ Method 2: Found MetaMask in providers array');
                             }
                         }
                         // Method 3: Fallback to window.ethereum if nothing else works
-                        if (!selectedProvider && window.ethereum) {
-                            selectedProvider = window.ethereum;
+                        if (!detectedProvider && window.ethereum) {
+                            detectedProvider = window.ethereum;
                             console.log('⚠️ Method 3: Using window.ethereum as fallback (may conflict with other wallets)');
 
                             // Show warning if multiple wallets detected
-                            showStatus('⚠️ 複数のウォレットが検出されました。接続に失敗する場合は、他のウォレット拡張機能を一時的に無効化してください。', 'warning');
+                            if (window.ethereum.providers && window.ethereum.providers.length > 1) {
+                                showStatus('⚠️ 複数のウォレットが検出されました。接続に失敗する場合は、他のウォレット拡張機能を一時的に無効化してください。', 'warning');
+                            }
                         }
                     } else if (walletType === 'rabby') {
                         if (window.ethereum?.providers) {
-                            selectedProvider = window.ethereum.providers.find(p => p.isRabby);
+                            detectedProvider = window.ethereum.providers.find(p => p.isRabby);
                         }
-                        if (!selectedProvider && window.ethereum?.isRabby) {
-                            selectedProvider = window.ethereum;
+                        if (!detectedProvider && window.ethereum?.isRabby) {
+                            detectedProvider = window.ethereum;
                         }
                     } else if (walletType === 'coinbase') {
                         if (window.ethereum?.providers) {
-                            selectedProvider = window.ethereum.providers.find(p => p.isCoinbaseWallet);
+                            detectedProvider = window.ethereum.providers.find(p => p.isCoinbaseWallet);
                         }
-                        if (!selectedProvider && window.ethereum?.isCoinbaseWallet) {
-                            selectedProvider = window.ethereum;
+                        if (!detectedProvider && window.ethereum?.isCoinbaseWallet) {
+                            detectedProvider = window.ethereum;
                         }
                     }
 
-                    if (!selectedProvider) {
+                    if (!detectedProvider) {
                         throw new Error(`${walletType}が見つかりません。ウォレット拡張機能がインストールされているか確認してください。`);
                     }
 
+                    // Store provider globally for event listeners
+                    selectedProvider = detectedProvider;
                     console.log('Selected provider:', selectedProvider);
 
                     showStatus(`${walletType}に接続中...`, 'info');
@@ -462,24 +632,35 @@
                     document.getElementById('connectedWallet').style.display = 'block';
                     document.getElementById('payBtn').style.display = 'block';
 
+                    // Setup event listeners for wallet events
+                    setupWalletEventListeners();
+
                     showStatus(`✅ ${walletType}に接続しました: ${address.slice(0, 6)}...${address.slice(-4)}`, 'success');
+
+                    // Update USDC balance after successful connection
+                    await updateUSDCBalance();
 
                 } else if (walletType === 'walletconnect') {
                     showStatus('WalletConnectは現在開発中です。MetaMask, Rabby, Coinbaseをご利用ください。', 'info');
                 }
 
+                isConnecting = false;
+
             } catch (error) {
                 console.error(error);
+                isConnecting = false;
 
                 // User-friendly error messages
                 let errorMsg = error.message;
 
                 if (error.message.includes('at least one account')) {
-                    errorMsg = 'ウォレットのアカウントがロックされています。MetaMaskを開いてロックを解除してください。';
+                    errorMsg = 'ウォレットのアカウントがロックされています。ウォレットを開いてロックを解除してください。';
                 } else if (error.code === 4001 || error.message.includes('User rejected')) {
                     errorMsg = '接続がキャンセルされました。もう一度お試しください。';
                 } else if (error.code === -32002) {
-                    errorMsg = 'MetaMaskで既に接続リクエストが保留中です。MetaMaskを開いて承認してください。';
+                    errorMsg = 'ウォレットで既に接続リクエストが保留中です。ウォレットを開いて承認してください。';
+                } else if (error.message.includes('User closed modal')) {
+                    errorMsg = '接続がキャンセルされました。もう一度お試しください。';
                 }
 
                 showStatus(`❌ ${errorMsg}`, 'error');
@@ -487,44 +668,119 @@
         }
 
         async function sendPayment() {
+            const btn = document.getElementById('payBtn');
+
             try {
-                const btn = document.getElementById('payBtn');
+                // Verify wallet is still connected
+                if (!signer || !provider || !selectedProvider) {
+                    showStatus('❌ ウォレットが接続されていません。再接続してください。', 'error');
+                    return;
+                }
+
                 btn.disabled = true;
                 btn.textContent = 'Processing...';
 
                 showStatus('トランザクション準備中...', 'info');
 
+                // Verify we're on the correct network
+                const network = await provider.getNetwork();
+                if (network.chainId !== CHAIN_ID) {
+                    showStatus('❌ 間違ったネットワークです。Base Sepoliaに切り替えてください。', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '💸 Send 0.1 USDC';
+                    return;
+                }
+
+                // Check USDC balance before attempting transfer
                 const usdcContract = new ethers.Contract(
                     USDC_ADDRESS,
-                    ['function transfer(address to, uint256 amount) returns (bool)'],
+                    [
+                        'function transfer(address to, uint256 amount) returns (bool)',
+                        'function balanceOf(address) view returns (uint256)',
+                        'function allowance(address owner, address spender) view returns (uint256)'
+                    ],
                     signer
                 );
 
+                const address = await signer.getAddress();
+                const balance = await usdcContract.balanceOf(address);
                 const amount = ethers.utils.parseUnits('0.1', 6);
 
-                showStatus('MetaMaskで確認してください...', 'info');
+                if (balance.lt(amount)) {
+                    const formattedBalance = ethers.utils.formatUnits(balance, 6);
+                    showStatus(`❌ USDC残高が不足しています。\n残高: ${parseFloat(formattedBalance).toFixed(2)} USDC\n必要: 0.1 USDC`, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '💸 Send 0.1 USDC';
+                    return;
+                }
+
+                showStatus('ウォレットで確認してください...', 'info');
+
+                // Estimate gas to catch potential errors early
+                try {
+                    await usdcContract.estimateGas.transfer(RECEIVER_ADDRESS, amount);
+                } catch (gasError) {
+                    console.error('Gas estimation failed:', gasError);
+                    if (gasError.message.includes('insufficient funds')) {
+                        showStatus('❌ ガス代（ETH）が不足しています。Base SepoliaのETHを取得してください。', 'error');
+                        btn.disabled = false;
+                        btn.textContent = '💸 Send 0.1 USDC';
+                        return;
+                    }
+                    // Continue anyway, let the actual transaction fail if needed
+                }
 
                 const tx = await usdcContract.transfer(RECEIVER_ADDRESS, amount);
 
-                showStatus('トランザクション送信完了！確認待ち...', 'info');
+                showStatus(`トランザクション送信完了！確認待ち...\nTx: ${tx.hash.slice(0, 10)}...`, 'info');
 
-                const receipt = await tx.wait();
+                // Wait for confirmation with timeout
+                const receipt = await Promise.race([
+                    tx.wait(),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Transaction timeout')), 120000)
+                    )
+                ]);
 
-                showStatus(`✅ 支払い成功！ Transaction: ${receipt.transactionHash}`, 'success');
+                if (receipt.status === 1) {
+                    showStatus(`✅ 支払い成功！\nTransaction: ${receipt.transactionHash}`, 'success');
+                    btn.textContent = '✅ Payment Complete';
+                    btn.style.background = '#28a745';
 
-                btn.textContent = '✅ Payment Complete';
+                    // Update balance after successful payment
+                    await updateUSDCBalance();
 
-                setTimeout(() => {
-                    showStatus('Discordに戻って「支払いました」と送信してください！', 'success');
-                }, 2000);
+                    setTimeout(() => {
+                        showStatus('Discordに戻って「支払いました」と送信してください！', 'success');
+                    }, 2000);
+                } else {
+                    throw new Error('Transaction failed');
+                }
 
             } catch (error) {
-                console.error(error);
-                showStatus(`支払いエラー: ${error.message}`, 'error');
+                console.error('Payment error:', error);
 
-                const btn = document.getElementById('payBtn');
+                let errorMsg = '支払いエラー';
+
+                if (error.code === 4001 || error.message.includes('User rejected') || error.message.includes('user rejected')) {
+                    errorMsg = 'トランザクションがキャンセルされました。';
+                } else if (error.message.includes('insufficient funds')) {
+                    errorMsg = 'ガス代（ETH）が不足しています。Base SepoliaのETHを取得してください。';
+                } else if (error.message.includes('Transaction timeout')) {
+                    errorMsg = 'トランザクションがタイムアウトしました。ネットワークの状況を確認してください。';
+                } else if (error.message.includes('nonce')) {
+                    errorMsg = 'トランザクションのnonce問題が発生しました。ウォレットをリセットするか、保留中のトランザクションを確認してください。';
+                } else if (error.message.includes('replacement fee too low')) {
+                    errorMsg = '保留中のトランザクションがあります。完了するまでお待ちください。';
+                } else if (error.message) {
+                    errorMsg = `支払いエラー: ${error.message.slice(0, 100)}`;
+                }
+
+                showStatus(`❌ ${errorMsg}`, 'error');
+
                 btn.disabled = false;
                 btn.textContent = '💸 Send 0.1 USDC';
+                btn.style.background = '';
             }
         }
     </script>
