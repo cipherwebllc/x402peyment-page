@@ -342,7 +342,19 @@
 
             } catch (error) {
                 console.error(error);
-                showStatus(`接続エラー: ${error.message}`, 'error');
+
+                // User-friendly error messages
+                let errorMsg = error.message;
+
+                if (error.message.includes('at least one account')) {
+                    errorMsg = 'ウォレットのアカウントがロックされています。MetaMaskを開いてロックを解除してください。';
+                } else if (error.code === 4001 || error.message.includes('User rejected')) {
+                    errorMsg = '接続がキャンセルされました。もう一度お試しください。';
+                } else if (error.code === -32002) {
+                    errorMsg = 'MetaMaskで既に接続リクエストが保留中です。MetaMaskを開いて承認してください。';
+                }
+
+                showStatus(`❌ ${errorMsg}`, 'error');
             }
         }
 
