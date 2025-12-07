@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X402 Payment - Base Sepolia</title>
+    <title>X402 Payment - Base Mainnet</title>
     <style>
         * {
             margin: 0;
@@ -175,8 +175,8 @@
 
         .network-badge {
             display: inline-block;
-            background: #ffd700;
-            color: #333;
+            background: #0052FF;
+            color: white;
             padding: 4px 12px;
             border-radius: 12px;
             font-size: 12px;
@@ -203,9 +203,9 @@
 
 <body>
     <div class="container">
-        <div class="network-badge">⚠️ Base Sepolia Testnet</div>
+        <div class="network-badge">🔵 Base Mainnet</div>
         <h1>💳 Payment Required</h1>
-        <p class="subtitle">0.1 USDC on Base Sepolia</p>
+        <p class="subtitle">0.1 USDC on Base</p>
 
         <div class="info-box">
             <div class="info-row">
@@ -214,7 +214,7 @@
             </div>
             <div class="info-row">
                 <span class="label">Network:</span>
-                <span class="value">Base Sepolia</span>
+                <span class="value">Base Mainnet</span>
             </div>
             <div class="info-row">
                 <span class="label">User ID:</span>
@@ -280,8 +280,8 @@
     </script>
     <script>
         const RECEIVER_ADDRESS = '0x52d4901142e2b5680027da5eb47c86cb02a3ca81';
-        const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
-        const CHAIN_ID = 84532; // Base Sepolia
+        const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+        const CHAIN_ID = 8453; // Base Mainnet
 
         let provider = null;
         let signer = null;
@@ -338,7 +338,7 @@
             const newChainId = parseInt(chainId, 16);
 
             if (newChainId !== CHAIN_ID) {
-                showStatus(`⚠️ 間違ったネットワークです。Base Sepoliaに切り替えてください。`, 'warning');
+                showStatus(`⚠️ 間違ったネットワークです。Base Mainnetに切り替えてください。`, 'warning');
                 document.getElementById('payBtn').disabled = true;
             } else {
                 // Reinitialize provider with new chain
@@ -346,7 +346,7 @@
                 const accounts = await selectedProvider.request({ method: 'eth_accounts' });
                 if (accounts.length > 0) {
                     signer = provider.getSigner(accounts[0]);
-                    showStatus(`✅ Base Sepoliaに接続されています`, 'success');
+                    showStatus(`✅ Base Mainnetに接続されています`, 'success');
                     document.getElementById('payBtn').disabled = false;
                     await updateUSDCBalance();
                 }
@@ -591,26 +591,26 @@
                     const network = await provider.getNetwork();
                     console.log('Current network:', network);
                     if (network.chainId !== CHAIN_ID) {
-                        showStatus('Base Sepoliaネットワークに切り替え中...', 'info');
+                        showStatus('Base Mainnetネットワークに切り替え中...', 'info');
                         try {
                             await selectedProvider.request({
                                 method: 'wallet_switchEthereumChain',
-                                params: [{ chainId: '0x14a34' }],
+                                params: [{ chainId: '0x2105' }],
                             });
                         } catch (switchError) {
                             if (switchError.code === 4902) {
                                 await selectedProvider.request({
                                     method: 'wallet_addEthereumChain',
                                     params: [{
-                                        chainId: '0x14a34',
-                                        chainName: 'Base Sepolia',
+                                        chainId: '0x2105',
+                                        chainName: 'Base',
                                         nativeCurrency: {
                                             name: 'Ethereum',
                                             symbol: 'ETH',
                                             decimals: 18
                                         },
-                                        rpcUrls: ['https://sepolia.base.org'],
-                                        blockExplorerUrls: ['https://sepolia.basescan.org']
+                                        rpcUrls: ['https://mainnet.base.org'],
+                                        blockExplorerUrls: ['https://basescan.org']
                                     }]
                                 });
                             } else {
@@ -685,7 +685,7 @@
                 // Verify we're on the correct network
                 const network = await provider.getNetwork();
                 if (network.chainId !== CHAIN_ID) {
-                    showStatus('❌ 間違ったネットワークです。Base Sepoliaに切り替えてください。', 'error');
+                    showStatus('❌ 間違ったネットワークです。Base Mainnetに切り替えてください。', 'error');
                     btn.disabled = false;
                     btn.textContent = '💸 Send 0.1 USDC';
                     return;
@@ -722,7 +722,7 @@
                 } catch (gasError) {
                     console.error('Gas estimation failed:', gasError);
                     if (gasError.message.includes('insufficient funds')) {
-                        showStatus('❌ ガス代（ETH）が不足しています。Base SepoliaのETHを取得してください。', 'error');
+                        showStatus('❌ ガス代（ETH）が不足しています。Base MainnetのETHを取得してください。', 'error');
                         btn.disabled = false;
                         btn.textContent = '💸 Send 0.1 USDC';
                         return;
@@ -765,7 +765,7 @@
                 if (error.code === 4001 || error.message.includes('User rejected') || error.message.includes('user rejected')) {
                     errorMsg = 'トランザクションがキャンセルされました。';
                 } else if (error.message.includes('insufficient funds')) {
-                    errorMsg = 'ガス代（ETH）が不足しています。Base SepoliaのETHを取得してください。';
+                    errorMsg = 'ガス代（ETH）が不足しています。Base MainnetのETHを取得してください。';
                 } else if (error.message.includes('Transaction timeout')) {
                     errorMsg = 'トランザクションがタイムアウトしました。ネットワークの状況を確認してください。';
                 } else if (error.message.includes('nonce')) {

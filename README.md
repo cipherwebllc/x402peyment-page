@@ -5,7 +5,7 @@ Web3 wallet-connect payment page for X402 payment system.
 ## Features
 
 - 🦊 **MetaMask Integration** - One-click wallet connection
-- 🔄 **Auto Network Switch** - Automatically switches to Base Sepolia
+- 🔄 **Auto Network Switch** - Automatically switches to Base Mainnet
 - 💳 **One-Click Payment** - Send 0.1 USDC with a single click
 - ✅ **Transaction Verification** - Real-time confirmation
 - 📱 **Responsive Design** - Works on desktop and mobile
@@ -75,11 +75,11 @@ Web3 wallet-connect payment page for X402 payment system.
 
 ## Configuration
 
-### Smart Contract Addresses (Base Sepolia)
+### Smart Contract Addresses (Base Mainnet)
 
-- **USDC Contract:** `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
+- **USDC Contract:** `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 - **Receiver Address:** `0x52d4901142e2b5680027da5eb47c86cb02a3ca81`
-- **Network:** Base Sepolia (Chain ID: 84532)
+- **Network:** Base Mainnet (Chain ID: 8453)
 
 ### Customization
 
@@ -89,26 +89,26 @@ Edit `index.html` to customize:
 - Payment amount
 - Network settings
 
-## Testing
+## Usage
 
-1. **Get Base Sepolia ETH:**
-   - Visit https://www.coinbase.com/faucets/base-ethereum-goerli-faucet
-   - Or use https://sepolia-faucet.pk910.de/
+1. **Get Base ETH:**
+   - Bridge ETH to Base via https://bridge.base.org/
+   - Or purchase from an exchange that supports Base
 
-2. **Get Base Sepolia USDC:**
-   - Use a faucet or bridge testnet USDC
+2. **Get USDC on Base:**
+   - Bridge USDC to Base or use an exchange
 
-3. **Test Payment:**
-   - Open: `index.html?user=test123`
+3. **Make Payment:**
+   - Open: `index.html?user=YOUR_USER_ID`
    - Connect MetaMask
    - Send payment
-   - Verify transaction on https://sepolia.basescan.org/
+   - Verify transaction on https://basescan.org/
 
 ## How It Works
 
 1. User opens payment page with `?user=USER_ID` parameter
 2. Clicks "Connect MetaMask"
-3. MetaMask prompts to switch to Base Sepolia (if needed)
+3. MetaMask prompts to switch to Base Mainnet (if needed)
 4. User clicks "Send 0.1 USDC"
 5. MetaMask confirms transaction
 6. Page shows success message
@@ -130,9 +130,9 @@ Edit `index.html` to customize:
 **"Please install MetaMask"**
 - Install MetaMask browser extension
 
-**"Please switch to Base Sepolia"**
+**"Please switch to Base Mainnet"**
 - Allow MetaMask to switch networks automatically
-- Or manually add Base Sepolia network
+- Or manually add Base network
 
 **"Transaction failed"**
 - Check you have enough ETH for gas
