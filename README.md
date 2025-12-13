@@ -2,11 +2,19 @@
 
 Web3 wallet-connect payment page for X402 payment system.
 
+## Pricing Plans
+
+| Plan | Price | Description |
+|------|-------|-------------|
+| 🎫 Single | 0.1 USDC | 1 time use |
+| 📅 Daily | 1 USDC | 30 uses per day |
+| ⭐ Pro | 9 USDC | 30 days unlimited |
+
 ## Features
 
 - 🦊 **MetaMask Integration** - One-click wallet connection
 - 🔄 **Auto Network Switch** - Automatically switches to Base Mainnet
-- 💳 **One-Click Payment** - Send 0.1 USDC with a single click
+- 💳 **Multiple Plans** - Choose from Single, Daily, or Pro plans
 - ✅ **Transaction Verification** - Real-time confirmation
 - 📱 **Responsive Design** - Works on desktop and mobile
 - 🎨 **Beautiful UI** - Modern gradient design
@@ -100,7 +108,9 @@ Edit `index.html` to customize:
 
 3. **Make Payment:**
    - Open: `index.html?user=YOUR_USER_ID`
-   - Connect MetaMask
+   - Or with plan preset: `index.html?user=YOUR_USER_ID&plan=pro`
+   - Available plans: `single`, `daily`, `pro`
+   - Select your plan and connect MetaMask
    - Send payment
    - Verify transaction on https://basescan.org/
 
