@@ -9,14 +9,16 @@ Web3 wallet-connect payment page for X402 payment system.
 |------|-------|-------------|
 | 🎫 Single | 0.1 USDC | 1 time use |
 | 📅 Daily | 1 USDC | 30 uses per day |
-| ⭐ Pro | 9 USDC | 30 days unlimited |
+| ⭐ Pro | 9 USDC | 30 days unlimited (準備中) |
 
 ### JPYC (Polygon Mainnet)
 | Plan | Price | Description |
 |------|-------|-------------|
 | 🎫 Single | 15 JPYC | 1 time use |
 | 📅 Daily | 150 JPYC | 30 uses per day |
-| ⭐ Pro | 1500 JPYC | 30 days unlimited |
+| ⭐ Pro | 1500 JPYC | 30 days unlimited (準備中) |
+
+> **Note:** Pro plan is currently in preparation and will be available after Postgres integration.
 
 ## Features
 
