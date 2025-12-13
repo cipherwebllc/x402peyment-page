@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>X402 Payment - USDC on Base</title>
+    <title>X402 Payment</title>
     <style>
         :root {
             --primary: #6366f1;
@@ -15,6 +15,8 @@
             --bg-card: #1e293b;
             --text: #f8fafc;
             --text-muted: #94a3b8;
+            --polygon: #8247e5;
+            --base: #0052FF;
         }
 
         * {
@@ -56,25 +58,88 @@
             background-clip: text;
         }
 
-        .plan-badge {
-            display: inline-block;
-            padding: 6px 16px;
-            border-radius: 20px;
+        /* Currency Toggle */
+        .currency-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .currency-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 10px;
             font-size: 14px;
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: transparent;
+            color: var(--text-muted);
+        }
+
+        .currency-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .currency-btn.active {
+            color: white;
+        }
+
+        .currency-btn.active.usdc {
+            background: linear-gradient(135deg, var(--base) 0%, #0066FF 100%);
+        }
+
+        .currency-btn.active.jpyc {
+            background: linear-gradient(135deg, var(--polygon) 0%, #a855f7 100%);
+        }
+
+        .currency-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .network-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
             margin-bottom: 16px;
         }
 
-        .plan-badge.single {
-            background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+        .network-badge.base {
+            background: rgba(0, 82, 255, 0.2);
+            color: var(--base);
         }
 
-        .plan-badge.pro {
-            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+        .network-badge.polygon {
+            background: rgba(130, 71, 229, 0.2);
+            color: var(--polygon);
         }
 
-        .plan-badge.daily {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        .network-badge::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .network-badge.base::before {
+            background: var(--base);
+        }
+
+        .network-badge.polygon::before {
+            background: var(--polygon);
         }
 
         /* Plan Selection Grid */
@@ -289,11 +354,6 @@
             box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
         }
 
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
-            color: white;
-        }
-
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -375,26 +435,6 @@
             font-size: 12px;
         }
 
-        .network-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: rgba(99, 102, 241, 0.2);
-            border-radius: 20px;
-            font-size: 12px;
-            color: var(--primary);
-            margin-bottom: 16px;
-        }
-
-        .network-badge::before {
-            content: "";
-            width: 8px;
-            height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-        }
-
         .instructions {
             margin-top: 24px;
             padding: 16px;
@@ -446,35 +486,47 @@
             <h1>💎 X402 Payment</h1>
         </div>
 
+        <!-- Currency Toggle -->
+        <div class="currency-toggle">
+            <button class="currency-btn usdc active" onclick="selectCurrency('usdc')">
+                <span>🔵</span>
+                <span>USDC (Base)</span>
+            </button>
+            <button class="currency-btn jpyc" onclick="selectCurrency('jpyc')">
+                <span>🟣</span>
+                <span>JPYC (Polygon)</span>
+            </button>
+        </div>
+
         <div style="text-align: center;">
-            <span class="network-badge">Base Mainnet</span>
+            <span id="networkBadge" class="network-badge base">Base Mainnet</span>
         </div>
 
         <!-- Plan Selection -->
         <div class="plan-section">
             <h3>📦 料金プランを選択</h3>
             <div class="plan-grid">
-                <div class="plan-card selected" data-plan="single" data-amount="0.1" onclick="selectPlan(this)">
+                <div class="plan-card selected" data-plan="single" onclick="selectPlan(this)">
                     <div class="plan-icon">🎫</div>
                     <div class="plan-card-content">
                         <div class="plan-name">単発</div>
-                        <div class="plan-price">0.1 USDC</div>
+                        <div class="plan-price" id="singlePrice">0.1 USDC</div>
                         <div class="plan-desc">1回利用</div>
                     </div>
                 </div>
-                <div class="plan-card" data-plan="daily" data-amount="1" onclick="selectPlan(this)">
+                <div class="plan-card" data-plan="daily" onclick="selectPlan(this)">
                     <div class="plan-icon">📅</div>
                     <div class="plan-card-content">
                         <div class="plan-name">Daily</div>
-                        <div class="plan-price">1 USDC</div>
+                        <div class="plan-price" id="dailyPrice">1 USDC</div>
                         <div class="plan-desc">30回/日</div>
                     </div>
                 </div>
-                <div class="plan-card popular" data-plan="pro" data-amount="9" onclick="selectPlan(this)">
+                <div class="plan-card popular" data-plan="pro" onclick="selectPlan(this)">
                     <div class="plan-icon">⭐</div>
                     <div class="plan-card-content">
                         <div class="plan-name">Pro</div>
-                        <div class="plan-price">9 USDC</div>
+                        <div class="plan-price" id="proPrice">9 USDC</div>
                         <div class="plan-desc">30日間無制限</div>
                     </div>
                 </div>
@@ -483,8 +535,8 @@
 
         <div class="amount-display">
             <span id="amountValue" class="amount">0.1</span>
-            <span class="currency">USDC</span>
-            <p id="planInfo" class="plan-info">1回分のクレジット</p>
+            <span id="currencyLabel" class="currency">USDC</span>
+            <p id="planInfo" class="plan-info">1回利用</p>
         </div>
 
         <div id="proBenefits" class="pro-benefits" style="display: none;">
@@ -507,7 +559,7 @@
             </div>
             <div class="info-row">
                 <span class="label">ネットワーク</span>
-                <span class="value">Base (Chain ID: 8453)</span>
+                <span id="networkInfo" class="value">Base (Chain ID: 8453)</span>
             </div>
         </div>
 
@@ -516,7 +568,7 @@
         </button>
 
         <button id="payBtn" class="btn btn-success" onclick="sendPayment()" disabled>
-            💳 USDCを送金
+            💳 送金
         </button>
 
         <div id="status" class="status"></div>
@@ -526,15 +578,16 @@
             <code id="txHashValue"></code>
             <button class="copy-btn" onclick="copyTxHash()">📋 コピー</button>
             <br>
-            <a id="basescanLink" href="#" target="_blank">BaseScan で確認 →</a>
+            <a id="explorerLink" href="#" target="_blank">エクスプローラーで確認 →</a>
         </div>
 
         <div class="instructions">
             <h4>📝 お支払い手順</h4>
             <ol>
+                <li>通貨を選択（USDC または JPYC）</li>
                 <li>MetaMaskに接続</li>
-                <li>Base ネットワークに切り替え（自動）</li>
-                <li>「USDCを送金」をクリック</li>
+                <li>ネットワークに切り替え（自動）</li>
+                <li>「送金」をクリック</li>
                 <li>MetaMaskで承認</li>
                 <li>トランザクションハッシュをチャットに送信</li>
             </ol>
@@ -544,26 +597,61 @@
             <p>Powered by <a href="https://x402.org" target="_blank">x402 Protocol</a></p>
             <p style="margin-top: 8px;">
                 <a href="https://bridge.base.org" target="_blank">Base にブリッジ</a> |
-                <a href="https://basescan.org" target="_blank">BaseScan</a>
+                <a href="https://polygonscan.com" target="_blank">PolygonScan</a>
             </p>
         </div>
     </div>
 
     <script>
-        // Configuration
-        const CONFIG = {
-            USDC_ADDRESS: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-            RECEIVER_ADDRESS: '0x52d4901142e2b5680027da5eb47c86cb02a3ca81',
-            BASE_CHAIN_ID: '0x2105', // 8453 in hex
-            BASE_RPC: 'https://mainnet.base.org'
+        // Network Configurations
+        const NETWORKS = {
+            base: {
+                chainId: '0x2105', // 8453
+                chainName: 'Base',
+                rpcUrl: 'https://mainnet.base.org',
+                explorer: 'https://basescan.org',
+                nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 }
+            },
+            polygon: {
+                chainId: '0x89', // 137
+                chainName: 'Polygon',
+                rpcUrl: 'https://polygon-rpc.com',
+                explorer: 'https://polygonscan.com',
+                nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 }
+            }
         };
 
-        // Plan configuration
-        const PLANS = {
-            single: { name: '🎫 単発', amount: 0.1, desc: '1回利用', badge: 'single' },
-            daily: { name: '📅 Daily', amount: 1, desc: '30回/日', badge: 'daily' },
-            pro: { name: '⭐ Pro', amount: 9, desc: '30日間無制限', badge: 'pro' }
+        // Token Configurations
+        const TOKENS = {
+            usdc: {
+                address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+                decimals: 6,
+                symbol: 'USDC',
+                network: 'base'
+            },
+            jpyc: {
+                address: '0x431D5dfF03120AFA4bDf332c61A6e1766eF37BDB',
+                decimals: 18,
+                symbol: 'JPYC',
+                network: 'polygon'
+            }
         };
+
+        // Plan Pricing per Currency
+        const PRICING = {
+            usdc: {
+                single: { amount: 0.1, label: '0.1 USDC' },
+                daily: { amount: 1, label: '1 USDC' },
+                pro: { amount: 9, label: '9 USDC' }
+            },
+            jpyc: {
+                single: { amount: 15, label: '15 JPYC' },
+                daily: { amount: 150, label: '150 JPYC' },
+                pro: { amount: 1500, label: '1500 JPYC' }
+            }
+        };
+
+        const RECEIVER_ADDRESS = '0x52d4901142e2b5680027da5eb47c86cb02a3ca81';
 
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -573,42 +661,100 @@
         let walletConnected = false;
         let userAddress = null;
         let selectedPlan = 'single';
-        let amount = 0.1;
+        let selectedCurrency = 'usdc';
 
-        // Plan selection function
+        // Currency selection
+        function selectCurrency(currency) {
+            selectedCurrency = currency;
+
+            // Update button states
+            document.querySelectorAll('.currency-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.currency-btn.${currency}`).classList.add('active');
+
+            // Update network badge
+            const badge = document.getElementById('networkBadge');
+            const networkInfo = document.getElementById('networkInfo');
+            if (currency === 'usdc') {
+                badge.className = 'network-badge base';
+                badge.textContent = 'Base Mainnet';
+                networkInfo.textContent = 'Base (Chain ID: 8453)';
+            } else {
+                badge.className = 'network-badge polygon';
+                badge.textContent = 'Polygon Mainnet';
+                networkInfo.textContent = 'Polygon (Chain ID: 137)';
+            }
+
+            // Update plan prices
+            updatePlanPrices();
+
+            // Update current display
+            updateDisplay();
+
+            // Reset wallet connection if network changed
+            if (walletConnected) {
+                showStatus('通貨を変更しました。再接続してください。', 'pending');
+                resetWalletState();
+            }
+        }
+
+        function updatePlanPrices() {
+            const pricing = PRICING[selectedCurrency];
+            document.getElementById('singlePrice').textContent = pricing.single.label;
+            document.getElementById('dailyPrice').textContent = pricing.daily.label;
+            document.getElementById('proPrice').textContent = pricing.pro.label;
+        }
+
+        function resetWalletState() {
+            walletConnected = false;
+            userAddress = null;
+            document.getElementById('connectBtn').textContent = '🦊 MetaMaskに接続';
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('payBtn').disabled = true;
+        }
+
+        // Plan selection
         function selectPlan(element) {
-            // Remove selected class from all cards
             document.querySelectorAll('.plan-card').forEach(card => {
                 card.classList.remove('selected');
             });
-
-            // Add selected class to clicked card
             element.classList.add('selected');
 
-            // Update selected plan and amount
             selectedPlan = element.dataset.plan;
-            amount = parseFloat(element.dataset.amount);
-
-            // Update display
-            const plan = PLANS[selectedPlan];
-            document.getElementById('amountValue').textContent = amount;
-            document.getElementById('planInfo').textContent = plan.desc;
-
-            // Update pay button
-            updatePayButton();
+            updateDisplay();
 
             // Show/hide pro benefits
-            if (selectedPlan === 'pro') {
-                document.getElementById('proBenefits').style.display = 'block';
-            } else {
-                document.getElementById('proBenefits').style.display = 'none';
-            }
+            document.getElementById('proBenefits').style.display =
+                selectedPlan === 'pro' ? 'block' : 'none';
+        }
+
+        function updateDisplay() {
+            const pricing = PRICING[selectedCurrency];
+            const planPricing = pricing[selectedPlan];
+            const token = TOKENS[selectedCurrency];
+
+            document.getElementById('amountValue').textContent = planPricing.amount;
+            document.getElementById('currencyLabel').textContent = token.symbol;
+
+            const descriptions = {
+                single: '1回利用',
+                daily: '30回/日',
+                pro: '30日間無制限'
+            };
+            document.getElementById('planInfo').textContent = descriptions[selectedPlan];
+
+            updatePayButton();
         }
 
         function updatePayButton() {
             const btn = document.getElementById('payBtn');
-            if (!btn.disabled || btn.textContent.includes('MetaMask')) {
-                btn.textContent = `💳 ${amount} USDC を送金`;
+            const pricing = PRICING[selectedCurrency];
+            const planPricing = pricing[selectedPlan];
+            const token = TOKENS[selectedCurrency];
+
+            if (!btn.disabled || walletConnected) {
+                btn.textContent = `💳 ${planPricing.amount} ${token.symbol} を送金`;
             }
         }
 
@@ -616,21 +762,28 @@
         function initPage() {
             document.getElementById('userId').textContent = userId;
 
-            // Check if plan is specified in URL
+            // Check URL params for currency
+            const urlCurrency = urlParams.get('currency');
+            if (urlCurrency && TOKENS[urlCurrency]) {
+                selectCurrency(urlCurrency);
+            }
+
+            // Check URL params for plan
             const urlPlan = urlParams.get('plan');
-            if (urlPlan && PLANS[urlPlan]) {
+            if (urlPlan && PRICING[selectedCurrency][urlPlan]) {
                 const planCard = document.querySelector(`[data-plan="${urlPlan}"]`);
                 if (planCard) {
                     selectPlan(planCard);
                 }
-            } else {
-                updatePayButton();
             }
+
+            updatePlanPrices();
+            updateDisplay();
         }
 
         // Check if MetaMask is installed
         function isMetaMaskInstalled() {
-            return typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
+            return typeof window.ethereum !== 'undefined';
         }
 
         // Connect wallet
@@ -644,7 +797,6 @@
             try {
                 showStatus('ウォレットに接続中...', 'pending');
 
-                // Request account access
                 const accounts = await window.ethereum.request({
                     method: 'eth_requestAccounts'
                 });
@@ -652,13 +804,14 @@
                 userAddress = accounts[0];
                 walletConnected = true;
 
-                // Switch to Base network
-                await switchToBase();
+                // Switch to appropriate network
+                await switchNetwork();
 
                 document.getElementById('connectBtn').textContent = `✅ ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
                 document.getElementById('connectBtn').disabled = true;
                 document.getElementById('payBtn').disabled = false;
 
+                updatePayButton();
                 showStatus('接続完了！送金ボタンをクリックしてください', 'success');
 
             } catch (error) {
@@ -667,28 +820,26 @@
             }
         }
 
-        // Switch to Base network
-        async function switchToBase() {
+        // Switch to appropriate network
+        async function switchNetwork() {
+            const token = TOKENS[selectedCurrency];
+            const network = NETWORKS[token.network];
+
             try {
                 await window.ethereum.request({
                     method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: CONFIG.BASE_CHAIN_ID }]
+                    params: [{ chainId: network.chainId }]
                 });
             } catch (switchError) {
-                // Chain not added, add it
                 if (switchError.code === 4902) {
                     await window.ethereum.request({
                         method: 'wallet_addEthereumChain',
                         params: [{
-                            chainId: CONFIG.BASE_CHAIN_ID,
-                            chainName: 'Base',
-                            nativeCurrency: {
-                                name: 'Ethereum',
-                                symbol: 'ETH',
-                                decimals: 18
-                            },
-                            rpcUrls: [CONFIG.BASE_RPC],
-                            blockExplorerUrls: ['https://basescan.org']
+                            chainId: network.chainId,
+                            chainName: network.chainName,
+                            nativeCurrency: network.nativeCurrency,
+                            rpcUrls: [network.rpcUrl],
+                            blockExplorerUrls: [network.explorer]
                         }]
                     });
                 } else {
@@ -697,7 +848,7 @@
             }
         }
 
-        // Send USDC payment
+        // Send payment
         async function sendPayment() {
             if (!walletConnected) {
                 showStatus('先にウォレットを接続してください', 'error');
@@ -708,26 +859,34 @@
                 showStatus('トランザクションを送信中...', 'pending');
                 document.getElementById('payBtn').disabled = true;
 
-                // USDC has 6 decimals
-                const amountInWei = BigInt(Math.floor(amount * 1e6)).toString(16);
-                const paddedAmount = amountInWei.padStart(64, '0');
-                const paddedReceiver = CONFIG.RECEIVER_ADDRESS.slice(2).padStart(64, '0');
+                const token = TOKENS[selectedCurrency];
+                const pricing = PRICING[selectedCurrency];
+                const planPricing = pricing[selectedPlan];
 
-                // ERC20 transfer function signature: transfer(address,uint256)
+                // Calculate amount with correct decimals
+                const amountInWei = BigInt(Math.floor(planPricing.amount * (10 ** token.decimals))).toString(16);
+                const paddedAmount = amountInWei.padStart(64, '0');
+                const paddedReceiver = RECEIVER_ADDRESS.slice(2).padStart(64, '0');
+
+                // ERC20 transfer function signature
                 const data = `0xa9059cbb${paddedReceiver}${paddedAmount}`;
 
                 const txHash = await window.ethereum.request({
                     method: 'eth_sendTransaction',
                     params: [{
                         from: userAddress,
-                        to: CONFIG.USDC_ADDRESS,
+                        to: token.address,
                         data: data,
-                        gas: '0x186A0' // 100000 gas
+                        gas: '0x186A0'
                     }]
                 });
 
-                const plan = PLANS[selectedPlan];
-                showStatus(`✅ ${plan.name} プランの購入完了！`, 'success');
+                const planNames = {
+                    single: '🎫 単発',
+                    daily: '📅 Daily',
+                    pro: '⭐ Pro'
+                };
+                showStatus(`✅ ${planNames[selectedPlan]} プランの購入完了！`, 'success');
                 showTxHash(txHash);
 
             } catch (error) {
@@ -748,10 +907,14 @@
         function showTxHash(hash) {
             const txHashBox = document.getElementById('txHashBox');
             const txHashValue = document.getElementById('txHashValue');
-            const basescanLink = document.getElementById('basescanLink');
+            const explorerLink = document.getElementById('explorerLink');
+
+            const token = TOKENS[selectedCurrency];
+            const network = NETWORKS[token.network];
 
             txHashValue.textContent = hash;
-            basescanLink.href = `https://basescan.org/tx/${hash}`;
+            explorerLink.href = `${network.explorer}/tx/${hash}`;
+            explorerLink.textContent = `${network.chainName}Scan で確認 →`;
             txHashBox.className = 'tx-hash show';
         }
 
@@ -767,11 +930,7 @@
         if (window.ethereum) {
             window.ethereum.on('accountsChanged', (accounts) => {
                 if (accounts.length === 0) {
-                    walletConnected = false;
-                    userAddress = null;
-                    document.getElementById('connectBtn').textContent = '🦊 MetaMaskに接続';
-                    document.getElementById('connectBtn').disabled = false;
-                    document.getElementById('payBtn').disabled = true;
+                    resetWalletState();
                 } else {
                     userAddress = accounts[0];
                     document.getElementById('connectBtn').textContent = `✅ ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
