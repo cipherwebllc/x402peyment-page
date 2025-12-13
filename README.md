@@ -4,17 +4,26 @@ Web3 wallet-connect payment page for X402 payment system.
 
 ## Pricing Plans
 
+### USDC (Base Mainnet)
 | Plan | Price | Description |
 |------|-------|-------------|
 | 🎫 Single | 0.1 USDC | 1 time use |
 | 📅 Daily | 1 USDC | 30 uses per day |
 | ⭐ Pro | 9 USDC | 30 days unlimited |
 
+### JPYC (Polygon Mainnet)
+| Plan | Price | Description |
+|------|-------|-------------|
+| 🎫 Single | 15 JPYC | 1 time use |
+| 📅 Daily | 150 JPYC | 30 uses per day |
+| ⭐ Pro | 1500 JPYC | 30 days unlimited |
+
 ## Features
 
 - 🦊 **MetaMask Integration** - One-click wallet connection
-- 🔄 **Auto Network Switch** - Automatically switches to Base Mainnet
+- 🔄 **Auto Network Switch** - Automatically switches to Base or Polygon
 - 💳 **Multiple Plans** - Choose from Single, Daily, or Pro plans
+- 💱 **Dual Currency** - Pay with USDC (Base) or JPYC (Polygon)
 - ✅ **Transaction Verification** - Real-time confirmation
 - 📱 **Responsive Design** - Works on desktop and mobile
 - 🎨 **Beautiful UI** - Modern gradient design
@@ -83,11 +92,18 @@ Web3 wallet-connect payment page for X402 payment system.
 
 ## Configuration
 
-### Smart Contract Addresses (Base Mainnet)
+### Smart Contract Addresses
 
+**Base Mainnet (USDC)**
 - **USDC Contract:** `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
-- **Receiver Address:** `0x52d4901142e2b5680027da5eb47c86cb02a3ca81`
 - **Network:** Base Mainnet (Chain ID: 8453)
+
+**Polygon Mainnet (JPYC)**
+- **JPYC Contract:** `0x431D5dfF03120AFA4bDf332c61A6e1766eF37BDB`
+- **Network:** Polygon Mainnet (Chain ID: 137)
+
+**Common**
+- **Receiver Address:** `0x52d4901142e2b5680027da5eb47c86cb02a3ca81`
 
 ### Customization
 
@@ -108,11 +124,12 @@ Edit `index.html` to customize:
 
 3. **Make Payment:**
    - Open: `index.html?user=YOUR_USER_ID`
-   - Or with plan preset: `index.html?user=YOUR_USER_ID&plan=pro`
+   - Or with preset: `index.html?user=YOUR_USER_ID&currency=jpyc&plan=pro`
+   - Available currencies: `usdc`, `jpyc`
    - Available plans: `single`, `daily`, `pro`
-   - Select your plan and connect MetaMask
+   - Select currency, plan and connect MetaMask
    - Send payment
-   - Verify transaction on https://basescan.org/
+   - Verify transaction on https://basescan.org/ or https://polygonscan.com/
 
 ## How It Works
 
