@@ -183,7 +183,7 @@
         }
 
         .plan-card.popular::before {
-            content: '準備中';
+            content: var(--coming-soon-text, 'Coming Soon');
             position: absolute;
             top: -10px;
             left: 50%;
@@ -503,14 +503,14 @@
             </button>
             <button class="currency-btn jpyc" onclick="selectCurrency('jpyc')">
                 <span>🟣</span>
-                <span>JPYC (Polygon)</span>
+                <span>JPYC (ポリゴン)</span>
             </button>
         </div>
 
         <!-- Alpha Notice -->
         <div class="alpha-notice">
-            <span class="alpha-badge">⚠️ Alpha版</span>
-            <p>現在テスト運用中のため、不具合やデータリセットが発生する可能性があります。投げ銭感覚でお試しいただける方のみご利用ください。問題が発生しても返金対応はできかねますのでご了承ください。</p>
+            <span id="alphaBadge" class="alpha-badge">⚠️ Alpha</span>
+            <p id="alphaNoticeText">Currently in test operation. Bugs or data resets may occur. Please only use if you're willing to try it out as a tip. We cannot provide refunds if issues occur.</p>
         </div>
 
         <div style="text-align: center;">
@@ -519,14 +519,14 @@
 
         <!-- Plan Selection -->
         <div class="plan-section">
-            <h3>📦 料金プランを選択</h3>
+            <h3 id="planSectionTitle">📦 Select a Plan</h3>
             <div class="plan-grid">
                 <div class="plan-card selected" data-plan="single" onclick="selectPlan(this)">
                     <div class="plan-icon">🎫</div>
                     <div class="plan-card-content">
-                        <div class="plan-name">単発</div>
+                        <div class="plan-name">Single</div>
                         <div class="plan-price" id="singlePrice">0.1 USDC</div>
-                        <div class="plan-desc">1回利用</div>
+                        <div class="plan-desc">1 use</div>
                     </div>
                 </div>
                 <div class="plan-card" data-plan="daily" onclick="selectPlan(this)">
@@ -534,7 +534,7 @@
                     <div class="plan-card-content">
                         <div class="plan-name">Daily</div>
                         <div class="plan-price" id="dailyPrice">1 USDC</div>
-                        <div class="plan-desc">30回/日</div>
+                        <div class="plan-desc">30 uses/day</div>
                     </div>
                 </div>
                 <div class="plan-card popular disabled" data-plan="pro">
@@ -542,7 +542,7 @@
                     <div class="plan-card-content">
                         <div class="plan-name">Pro</div>
                         <div class="plan-price" id="proPrice">9 USDC</div>
-                        <div class="plan-desc">30日間無制限</div>
+                        <div class="plan-desc">30 days unlimited</div>
                     </div>
                 </div>
             </div>
@@ -551,7 +551,7 @@
         <div class="amount-display">
             <span id="amountValue" class="amount">0.1</span>
             <span id="currencyLabel" class="currency">USDC</span>
-            <p id="planInfo" class="plan-info">1回利用</p>
+            <p id="planInfo" class="plan-info">1 use</p>
         </div>
 
         <div class="info-box">
@@ -560,42 +560,42 @@
                 <span id="userId" class="value">-</span>
             </div>
             <div class="info-row">
-                <span class="label">送金先</span>
+                <span id="recipientLabel" class="label">Recipient</span>
                 <span class="value">0x52d4...3ca81</span>
             </div>
             <div class="info-row">
-                <span class="label">ネットワーク</span>
+                <span id="networkLabel" class="label">Network</span>
                 <span id="networkInfo" class="value">Base (Chain ID: 8453)</span>
             </div>
         </div>
 
         <button id="connectBtn" class="btn btn-primary" onclick="connectWallet()">
-            🦊 MetaMaskに接続
+            🦊 Connect MetaMask
         </button>
 
         <button id="payBtn" class="btn btn-success" onclick="sendPayment()" disabled>
-            💳 送金
+            💳 Send
         </button>
 
         <div id="status" class="status"></div>
 
         <div id="txHashBox" class="tx-hash">
-            <p>✅ トランザクション完了！以下のハッシュをチャットに送信してください：</p>
+            <p id="txCompleteText">✅ Transaction complete! Send the following hash to chat:</p>
             <code id="txHashValue"></code>
-            <button class="copy-btn" onclick="copyTxHash()">📋 コピー</button>
+            <button id="copyBtn" class="copy-btn" onclick="copyTxHash()">📋 Copy</button>
             <br>
-            <a id="explorerLink" href="#" target="_blank">エクスプローラーで確認 →</a>
+            <a id="explorerLink" href="#" target="_blank">View on BaseScan →</a>
         </div>
 
         <div class="instructions">
-            <h4>📝 お支払い手順</h4>
-            <ol>
-                <li>通貨を選択（USDC または JPYC）</li>
-                <li>MetaMaskに接続</li>
-                <li>ネットワークに切り替え（自動）</li>
-                <li>「送金」をクリック</li>
-                <li>MetaMaskで承認</li>
-                <li>トランザクションハッシュをチャットに送信</li>
+            <h4 id="instructionsTitle">📝 Payment Instructions</h4>
+            <ol id="instructionsList">
+                <li>Select currency (USDC or JPYC)</li>
+                <li>Connect MetaMask</li>
+                <li>Switch network (automatic)</li>
+                <li>Click "Send"</li>
+                <li>Approve in MetaMask</li>
+                <li>Send transaction hash to chat</li>
             </ol>
         </div>
 
@@ -657,6 +657,78 @@
             }
         };
 
+        // Language strings per currency
+        const LANG = {
+            usdc: {
+                planSectionTitle: '📦 Select a Plan',
+                planNames: { single: 'Single', daily: 'Daily', pro: 'Pro' },
+                planDescs: { single: '1 use', daily: '30 uses/day', pro: '30 days unlimited' },
+                comingSoon: 'Coming Soon',
+                alphaBadge: '⚠️ Alpha',
+                alphaNotice: 'Currently in test operation. Bugs or data resets may occur. Please only use if you\'re willing to try it out as a tip. We cannot provide refunds if issues occur.',
+                connectBtn: '🦊 Connect MetaMask',
+                connectingStatus: 'Connecting to wallet...',
+                connectedStatus: 'Connected! Click the send button',
+                sendBtn: '💳 Send',
+                sendingStatus: 'Sending transaction...',
+                purchaseComplete: 'Purchase complete!',
+                txComplete: '✅ Transaction complete! Send the following hash to chat:',
+                copyBtn: '📋 Copy',
+                copiedStatus: '📋 Copied! Paste it in the chat',
+                explorerLink: 'View on',
+                instructionsTitle: '📝 Payment Instructions',
+                instructions: [
+                    'Select currency (USDC or JPYC)',
+                    'Connect MetaMask',
+                    'Switch network (automatic)',
+                    'Click "Send"',
+                    'Approve in MetaMask',
+                    'Send transaction hash to chat'
+                ],
+                recipient: 'Recipient',
+                network: 'Network',
+                currencyChanged: 'Currency changed. Please reconnect.',
+                installMetaMask: 'Please install MetaMask',
+                connectFirst: 'Please connect wallet first',
+                connectionError: 'Connection error:',
+                sendError: 'Send error:'
+            },
+            jpyc: {
+                planSectionTitle: '📦 料金プランを選択',
+                planNames: { single: '単発', daily: 'Daily', pro: 'Pro' },
+                planDescs: { single: '1回利用', daily: '30回/日', pro: '30日間無制限' },
+                comingSoon: '準備中',
+                alphaBadge: '⚠️ Alpha版',
+                alphaNotice: '現在テスト運用中のため、不具合やデータリセットが発生する可能性があります。投げ銭感覚でお試しいただける方のみご利用ください。問題が発生しても返金対応はできかねますのでご了承ください。',
+                connectBtn: '🦊 MetaMaskに接続',
+                connectingStatus: 'ウォレットに接続中...',
+                connectedStatus: '接続完了！送金ボタンをクリックしてください',
+                sendBtn: '💳 送金',
+                sendingStatus: 'トランザクションを送信中...',
+                purchaseComplete: 'プランの購入完了！',
+                txComplete: '✅ トランザクション完了！以下のハッシュをチャットに送信してください：',
+                copyBtn: '📋 コピー',
+                copiedStatus: '📋 コピーしました！チャットに貼り付けてください',
+                explorerLink: 'で確認',
+                instructionsTitle: '📝 お支払い手順',
+                instructions: [
+                    '通貨を選択（USDC または JPYC）',
+                    'MetaMaskに接続',
+                    'ネットワークに切り替え（自動）',
+                    '「送金」をクリック',
+                    'MetaMaskで承認',
+                    'トランザクションハッシュをチャットに送信'
+                ],
+                recipient: '送金先',
+                network: 'ネットワーク',
+                currencyChanged: '通貨を変更しました。再接続してください。',
+                installMetaMask: 'MetaMask をインストールしてください',
+                connectFirst: '先にウォレットを接続してください',
+                connectionError: '接続エラー:',
+                sendError: '送金エラー:'
+            }
+        };
+
         const RECEIVER_ADDRESS = '0x52d4901142e2b5680027da5eb47c86cb02a3ca81';
 
         // Parse URL parameters
@@ -672,6 +744,7 @@
         // Currency selection
         function selectCurrency(currency) {
             selectedCurrency = currency;
+            const lang = LANG[currency];
 
             // Update button states
             document.querySelectorAll('.currency-btn').forEach(btn => {
@@ -692,6 +765,9 @@
                 networkInfo.textContent = 'Polygon (Chain ID: 137)';
             }
 
+            // Update language-dependent UI elements
+            updateLanguage(lang);
+
             // Update plan prices
             updatePlanPrices();
 
@@ -700,9 +776,48 @@
 
             // Reset wallet connection if network changed
             if (walletConnected) {
-                showStatus('通貨を変更しました。再接続してください。', 'pending');
+                showStatus(lang.currencyChanged, 'pending');
                 resetWalletState();
             }
+        }
+
+        // Update all language-dependent UI elements
+        function updateLanguage(lang) {
+            // Plan section title
+            document.getElementById('planSectionTitle').textContent = lang.planSectionTitle;
+
+            // Plan names and descriptions
+            document.querySelector('[data-plan="single"] .plan-name').textContent = lang.planNames.single;
+            document.querySelector('[data-plan="single"] .plan-desc').textContent = lang.planDescs.single;
+            document.querySelector('[data-plan="daily"] .plan-name').textContent = lang.planNames.daily;
+            document.querySelector('[data-plan="daily"] .plan-desc').textContent = lang.planDescs.daily;
+            document.querySelector('[data-plan="pro"] .plan-name').textContent = lang.planNames.pro;
+            document.querySelector('[data-plan="pro"] .plan-desc').textContent = lang.planDescs.pro;
+
+            // Coming soon badge (via CSS content)
+            document.documentElement.style.setProperty('--coming-soon-text', `"${lang.comingSoon}"`);
+
+            // Alpha notice
+            document.getElementById('alphaBadge').textContent = lang.alphaBadge;
+            document.getElementById('alphaNoticeText').textContent = lang.alphaNotice;
+
+            // Buttons
+            if (!walletConnected) {
+                document.getElementById('connectBtn').textContent = lang.connectBtn;
+            }
+
+            // Info box labels
+            document.getElementById('recipientLabel').textContent = lang.recipient;
+            document.getElementById('networkLabel').textContent = lang.network;
+
+            // Transaction complete text
+            document.getElementById('txCompleteText').textContent = lang.txComplete;
+            document.getElementById('copyBtn').textContent = lang.copyBtn;
+
+            // Instructions
+            document.getElementById('instructionsTitle').textContent = lang.instructionsTitle;
+            const instructionsList = document.getElementById('instructionsList');
+            instructionsList.innerHTML = lang.instructions.map(item => `<li>${item}</li>`).join('');
         }
 
         function updatePlanPrices() {
@@ -715,7 +830,8 @@
         function resetWalletState() {
             walletConnected = false;
             userAddress = null;
-            document.getElementById('connectBtn').textContent = '🦊 MetaMaskに接続';
+            const lang = LANG[selectedCurrency];
+            document.getElementById('connectBtn').textContent = lang.connectBtn;
             document.getElementById('connectBtn').disabled = false;
             document.getElementById('payBtn').disabled = true;
         }
@@ -735,16 +851,12 @@
             const pricing = PRICING[selectedCurrency];
             const planPricing = pricing[selectedPlan];
             const token = TOKENS[selectedCurrency];
+            const lang = LANG[selectedCurrency];
 
             document.getElementById('amountValue').textContent = planPricing.amount;
             document.getElementById('currencyLabel').textContent = token.symbol;
 
-            const descriptions = {
-                single: '1回利用',
-                daily: '30回/日',
-                pro: '30日間無制限'
-            };
-            document.getElementById('planInfo').textContent = descriptions[selectedPlan];
+            document.getElementById('planInfo').textContent = lang.planDescs[selectedPlan];
 
             updatePayButton();
         }
@@ -754,9 +866,14 @@
             const pricing = PRICING[selectedCurrency];
             const planPricing = pricing[selectedPlan];
             const token = TOKENS[selectedCurrency];
+            const lang = LANG[selectedCurrency];
 
             if (!btn.disabled || walletConnected) {
-                btn.textContent = `💳 ${planPricing.amount} ${token.symbol} を送金`;
+                if (selectedCurrency === 'usdc') {
+                    btn.textContent = `💳 Send ${planPricing.amount} ${token.symbol}`;
+                } else {
+                    btn.textContent = `💳 ${planPricing.amount} ${token.symbol} を送金`;
+                }
             }
         }
 
@@ -790,14 +907,16 @@
 
         // Connect wallet
         async function connectWallet() {
+            const lang = LANG[selectedCurrency];
+
             if (!isMetaMaskInstalled()) {
-                showStatus('MetaMask をインストールしてください', 'error');
+                showStatus(lang.installMetaMask, 'error');
                 window.open('https://metamask.io/download/', '_blank');
                 return;
             }
 
             try {
-                showStatus('ウォレットに接続中...', 'pending');
+                showStatus(lang.connectingStatus, 'pending');
 
                 const accounts = await window.ethereum.request({
                     method: 'eth_requestAccounts'
@@ -814,11 +933,11 @@
                 document.getElementById('payBtn').disabled = false;
 
                 updatePayButton();
-                showStatus('接続完了！送金ボタンをクリックしてください', 'success');
+                showStatus(lang.connectedStatus, 'success');
 
             } catch (error) {
                 console.error('Connection error:', error);
-                showStatus(`接続エラー: ${error.message}`, 'error');
+                showStatus(`${lang.connectionError} ${error.message}`, 'error');
             }
         }
 
@@ -852,13 +971,15 @@
 
         // Send payment
         async function sendPayment() {
+            const lang = LANG[selectedCurrency];
+
             if (!walletConnected) {
-                showStatus('先にウォレットを接続してください', 'error');
+                showStatus(lang.connectFirst, 'error');
                 return;
             }
 
             try {
-                showStatus('トランザクションを送信中...', 'pending');
+                showStatus(lang.sendingStatus, 'pending');
                 document.getElementById('payBtn').disabled = true;
 
                 const token = TOKENS[selectedCurrency];
@@ -883,17 +1004,14 @@
                     }]
                 });
 
-                const planNames = {
-                    single: '🎫 単発',
-                    daily: '📅 Daily',
-                    pro: '⭐ Pro'
-                };
-                showStatus(`✅ ${planNames[selectedPlan]} プランの購入完了！`, 'success');
+                const planIcons = { single: '🎫', daily: '📅', pro: '⭐' };
+                const planName = lang.planNames[selectedPlan];
+                showStatus(`✅ ${planIcons[selectedPlan]} ${planName} ${lang.purchaseComplete}`, 'success');
                 showTxHash(txHash);
 
             } catch (error) {
                 console.error('Transaction error:', error);
-                showStatus(`送金エラー: ${error.message}`, 'error');
+                showStatus(`${lang.sendError} ${error.message}`, 'error');
                 document.getElementById('payBtn').disabled = false;
             }
         }
@@ -910,21 +1028,27 @@
             const txHashBox = document.getElementById('txHashBox');
             const txHashValue = document.getElementById('txHashValue');
             const explorerLink = document.getElementById('explorerLink');
+            const lang = LANG[selectedCurrency];
 
             const token = TOKENS[selectedCurrency];
             const network = NETWORKS[token.network];
 
             txHashValue.textContent = hash;
             explorerLink.href = `${network.explorer}/tx/${hash}`;
-            explorerLink.textContent = `${network.chainName}Scan で確認 →`;
+            if (selectedCurrency === 'usdc') {
+                explorerLink.textContent = `${lang.explorerLink} ${network.chainName}Scan →`;
+            } else {
+                explorerLink.textContent = `${network.chainName}Scan ${lang.explorerLink} →`;
+            }
             txHashBox.className = 'tx-hash show';
         }
 
         // Copy transaction hash
         function copyTxHash() {
             const hash = document.getElementById('txHashValue').textContent;
+            const lang = LANG[selectedCurrency];
             navigator.clipboard.writeText(hash).then(() => {
-                showStatus('📋 コピーしました！チャットに貼り付けてください', 'success');
+                showStatus(lang.copiedStatus, 'success');
             });
         }
 
